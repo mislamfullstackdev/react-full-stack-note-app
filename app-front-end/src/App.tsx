@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import "./App.css";
+import { Note } from "./note"
 
 // Added dummy css for visualization
 
 const App = () => {
-  const [notes, setNotes] = useState([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   // Get api
   useEffect(()=>{
     const fetchNotes = async () => {
@@ -17,16 +18,40 @@ const App = () => {
       }catch(e){
         console.log(e);
       }
-    }
-  });
+    };
+    fetchNotes();
+  }, []);
+
+  
+
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
 
-  const handleAddNote = (event: React.FormEvent) => {
+  // save notes, POST API
+  const handleAddNote = async (event: React.FormEvent) => {
     event.preventDefault();
-    console.log(title)
-    console.log(content)
-  }
+    try{
+      const response = await fetch(
+        "http://localhost:5000/api/notes",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title,
+            content,
+          }),
+        }
+      );
+      const newNote = await response.json();
+      setNotes([newNote, ...notes]);
+      setTitle("");
+      setContent("");
+    }catch(e){
+      console.log(e);
+    }
+  };
 
   return(
     <div className="app-container">
@@ -44,15 +69,15 @@ const App = () => {
         <button type="submit">Add Note</button>
       </form>
       <div className="notes-grid">
-        {notes.map((note) => (
-          <div className="note-item" key={note.id}>
+        
+          <div className="note-item" key="">
             <div className="notes-header">
               <button>x</button>
             </div>
-            <h2>{note.title}</h2>
-            <p>{note.content}</p>
+            <h2>note.title</h2>
+            <p>note.content</p>
           </div>
-        ))}
+       
       </div>
     </div>
   );
