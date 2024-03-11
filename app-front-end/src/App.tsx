@@ -6,6 +6,10 @@ import { Note } from "./note"
 
 const App = () => {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [title, setTitle] = useState("")
+  const [content, setContent] = useState("")
+  const [selectedNote, setSelectedNote] = useState< Note | null>(null);
+
   // Get api
   useEffect(()=>{
     const fetchNotes = async () => {
@@ -22,11 +26,13 @@ const App = () => {
     fetchNotes();
   }, []);
 
+  // handle cancel
+  const handleCancel = () => {
+    setTitle("");
+    setContent("");
+    setSelectedNote(null)
+  }
   
-
-  const [title, setTitle] = useState("")
-  const [content, setContent] = useState("")
-
   // save notes, POST API
   const handleAddNote = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -53,9 +59,55 @@ const App = () => {
     }
   };
 
+  const handleUpdateNote = (event: React.FormEvent) => {
+    event.preventDefault();
+    if(!selectedNote){
+      return;
+    }
+    const updatedNote: Note = {
+      id: selectedNote.id,
+      title: title,
+      content: content,
+    };
+
+    const updateNotesList = notes.map((note) => (note.id === selectedNote.id ? updatedNote : note));
+
+    setNotes(updateNotesList);
+    setTitle("");
+    setContent("");
+    setSelectedNote(null);
+  }
+
+  // Delete note
+  const deleteNote = async (event: React.MouseEvent, noteId: number) => {
+    event.stopPropagation();
+
+    try{
+      await fetch(
+        `http://localhost:5000/api/notes/${noteId}`,
+        {
+          method: "DELETE",
+        }
+      );
+      const updateNotes = notes.filter(
+        (note) => note.id !== noteId
+      );
+      setNotes(updateNotes);
+    }catch(e){
+      console.log(e)
+    }
+  }
+
+  // track the selected note
+  const handleNoteClick = (note: Note) => {
+    setSelectedNote(note);
+    setTitle(note.title);
+    setContent(note.content);
+  }
+
   return(
     <div className="app-container">
-      <form className="note-form" onSubmit={handleAddNote}>
+      <form className="note-form" onSubmit={(event) => (selectedNote ? handleUpdateNote(event): handleAddNote(event))}>
         <input 
           value={title}
           onChange={(event) => setTitle(event.target.value)}
@@ -69,15 +121,15 @@ const App = () => {
         <button type="submit">Add Note</button>
       </form>
       <div className="notes-grid">
-        
-          <div className="note-item" key="">
+        {notes.map((note) => (
+          <div key={note.id} className="note-item" onClick={() => handleNoteClick(note)}>
             <div className="notes-header">
-              <button>x</button>
+              <button onClick={(event) => deleteNote(event, note.id)}>x</button>
             </div>
-            <h2>note.title</h2>
-            <p>note.content</p>
+            <h2>{note.title}</h2>
+            <p>{note.content}</p>
           </div>
-       
+       ))}
       </div>
     </div>
   );
